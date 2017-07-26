@@ -12,9 +12,9 @@ include('../vendors/PHPMailer/class.phpmailer.php');
 include('../vendors/phpupload/src/class.upload.php');
 
 
-$user_id = $_SESSION["user_id"];
+$staff_admin_id = $_SESSION["staff_admin_id"];
 
-if($user_id=="")
+if($staff_admin_id=="")
 {
 ?>
 	<script language="JavaScript" type="text/JavaScript">
@@ -99,7 +99,7 @@ if($user_id=="")
               </div>
               <div class="profile_info">
                 <span>ยินดีต้อนรับ,</span>
-                <h2><? echo getUser($user_id,'display_name');?></h2>
+                <h2><? echo getStaff($staff_admin_id,"firstname");?> - <? echo getStaff($staff_admin_id,"lastname");?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -109,14 +109,15 @@ if($user_id=="")
             <!-- sidebar menu -->
             <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
               <div class="menu_section">
-                <h3>สำหรับเกษตรกร</h3>
-              	<ul class="nav side-menu">
-					<?
-					$sql = "select * from menu_master where menu_level=1 order by sort"; 
+                <h3>Main Menu</h3>
+                <ul class="nav side-menu">
+                <?
+					$sql = "select * from menu_master order by sort"; 
 					$result = mysql_query($sql) or die(mysql_error());
 					while($rows=mysql_fetch_array($result))
 					{
-					
+						if(chkPrioty($staff_admin_id,$rows['menu_id'])=="true")
+						{
 				?>
 					<li>
 					  <a href="index.php?where=<? echo $rows['menu_link'];?>">
@@ -124,7 +125,7 @@ if($user_id=="")
 					  </a>
 					</li>
 				<?
-					
+					}
 					}
 				?>
                 </ul>

@@ -16,7 +16,7 @@ if($username<>"" && $password<>"")
         $result = mysql_query($sql) or die(mysql_error());
         $fetch = mysql_fetch_array($result);
         $staff_admin_id = $fetch["staff_admin_id"];
-		$changepass= $fetch["changepass"];
+//		$changepass= $fetch["changepass"];
 	
 		if($changepass=="0")
 		{

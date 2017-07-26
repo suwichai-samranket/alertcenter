@@ -3,7 +3,7 @@
 	class connect_db {
 		// ======= Start variable of class ===========
 		var $host = "localhost";
-		var $database = "bpsmart_mfm_db";
+		var $database = "alertcenter";
 		var $user = "root";
 		var $password = "";
 		var $link_con = 0;
