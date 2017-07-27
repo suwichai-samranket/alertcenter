@@ -39,10 +39,9 @@
 				  $handle->image_resize         = true;
 				  $handle->image_x              = 200;
 				  $handle->image_ratio_y        = true;
-				  $handle->process('images/staff/');
+				  $handle->process('../../images/staff/');
 				  if ($handle->processed) {
-
-					$sqlupdate = "update staff_admin set picture='$handle->file_new_name_body' where staff_admin_id='$staff_admin_idx'";
+					$sqlupdate = "update staff_admin set picture='".$handle->file_dst_name."' where staff_admin_id='$staff_admin_idx'";
 					$resultupdate = mysql_query($sqlupdate) or die(mysql_error());
 					  
 					$handle->clean();

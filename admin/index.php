@@ -95,7 +95,11 @@ if($staff_admin_id=="")
             <!-- menu profile quick info -->
             <div class="profile clearfix">
               <div class="profile_pic">
+               <? if(getStaff($staff_admin_id,"picture")<>""){?>
+                <img src="images/staff/<? echo getStaff($staff_admin_id,"picture")?>" alt="..." class="img-circle profile_img">
+                <? }else{ ?>
                 <img src="images/user.png" alt="..." class="img-circle profile_img">
+                <? } ?>
               </div>
               <div class="profile_info">
                 <span>ยินดีต้อนรับ,</span>

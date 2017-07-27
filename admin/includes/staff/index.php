@@ -1,5 +1,35 @@
 <script>
+	function updateDataTableSelectAllCtrl(table){
+	   var $table             = table.table().node();
+	   var $chkbox_all        = $('tbody input[type="checkbox"]', $table);
+	   var $chkbox_checked    = $('tbody input[type="checkbox"]:checked', $table);
+	   var chkbox_select_all  = $('thead input[name="select_all"]', $table).get(0);
+
+	   // If none of the checkboxes are checked
+	   if($chkbox_checked.length === 0){
+		  chkbox_select_all.checked = false;
+		  if('indeterminate' in chkbox_select_all){
+			 chkbox_select_all.indeterminate = false;
+		  }
+
+	   // If all of the checkboxes are checked
+	   } else if ($chkbox_checked.length === $chkbox_all.length){
+		  chkbox_select_all.checked = true;
+		  if('indeterminate' in chkbox_select_all){
+			 chkbox_select_all.indeterminate = false;
+		  }
+
+	   // If some of the checkboxes are checked
+	   } else {
+		  chkbox_select_all.checked = true;
+		  if('indeterminate' in chkbox_select_all){
+			 chkbox_select_all.indeterminate = true;
+		  }
+	   }
+	}
+
 	$( document ).ready( function () {
+		var rows_selected = [];
 		var dataTable = $( '#table1' ).DataTable( {
 			"processing": true,
 			"serverSide": true,
@@ -18,7 +48,7 @@
 					 'orderable':false,
 					 'className':'dt-body-center',
 					 'render': function (data, type, row){
-						 return '<input type="checkbox" name="id[]" value="'+ row[0] +'">';
+						 return '<input type="checkbox" id="chkid" name="id[]" value="'+ row[0] +'">';
 					 }
 			  	},
 				{
@@ -30,32 +60,92 @@
 					 return '<button type="button" id="View" class="btn btn-info btn-xs" data-toggle="modal" data-target=".edit-modal" value="'+row[0]+'"><i class="fa fa-pencil"></i> Edit</button>';
 				}
 			} ],
-			'order': [ 3, 'desc' ]
+			'order': [ 3, 'desc' ],
+			  'rowCallback': function(row, data, dataIndex){
+				 // Get row ID
+				 var rowId = data[0];
+
+				 // If row ID is in the list of selected row IDs
+				 if($.inArray(rowId, rows_selected) !== -1){
+					$(row).find('input[type="checkbox"]').prop('checked', true);
+					$(row).addClass('selected');
+				 }
+			  }
 		} );
 		
-		$( "#table1_filter" ).css( "display", "none" ); // hiding global search box
+	 	$( "#table1_filter" ) . css( "display", "none" ); // hiding global search box
+
+	 	// Handle click on checkbox
+	 	$( '#table1 tbody' ) . on( 'click', 'input[type="checkbox"]', function ( e ) {
+	 		var $row = $( this ) . closest( 'tr' );
+
+	 		// Get row data
+	 		var data = dataTable . row( $row ) . data();
+
+	 		// Get row ID
+	 		var rowId = data[ 0 ];
+
+	 		// Determine whether row ID is in the list of selected row IDs
+	 		var index = $ . inArray( rowId, rows_selected );
+
+	 		// If checkbox is checked and row ID is not in list of selected row IDs
+	 		if ( this . checked && index === -1 ) {
+	 			rows_selected . push( rowId );
+
+	 			// Otherwise, if checkbox is not checked and row ID is in list of selected row IDs
+	 		} else if ( !this . checked && index !== -1 ) {
+	 			rows_selected . splice( index, 1 );
+	 		}
+
+	 		if ( this . checked ) {
+	 			$row . addClass( 'selected' );
+	 		} else {
+	 			$row . removeClass( 'selected' );
+	 		}
+
+	 		// Update state of "Select all" control
+	 		updateDataTableSelectAllCtrl( dataTable );
+
+	 		// Prevent click event from propagating to parent
+	 		e . stopPropagation();
+	 	} );
+
+	 	// Handle click on table cells with checkboxes
+	 	$( '#table1' ) . on( 'click', '#chkid', function ( e ) {
+	 		$( this ) . parent() . find( 'input[type="checkbox"]' ) . trigger( 'click' );
+	 	} );
+		 // Handle click on "Select all" control
+		 $( 'thead input[name="select_all"]', dataTable . table() . container() ) . on( 'click', function ( e ) {
+		 	if ( this . checked ) {
+		 		$( '#table1 tbody input[type="checkbox"]:not(:checked)' ) . trigger( 'click' );
+		 	} else {
+		 		$( '#table1 tbody input[type="checkbox"]:checked' ) . trigger( 'click' );
+		 	}
+
+		 	// Prevent click event from propagating to parent
+		 	e . stopPropagation();
+		 } );
+
+		 // Handle table draw event
+		 dataTable . on( 'draw', function () {
+		 	// Update state of "Select all" control
+		 	updateDataTableSelectAllCtrl( dataTable );
+		 } );
+
 		
-		$('.search-input-text').on( 'keyup click', function () { // for text boxes
-			var i = $( this ).attr( 'data-column' ); // getting column index
-			var v = $( this ).val(); // getting search input value
-			dataTable.columns( i ).search( v ).draw();
-		} );
-		
-		$( '.search-input-select' ).on( 'change', function () { // for select box
-			var i = $( this ).attr( 'data-column' );
-			var v = $( this ).val();
-			dataTable.columns( i ).search( v ).draw();
-		} );
-		
-		// Handle click on "Select all" control
-		$( '#select-all' ).on( 'click', function () {
-			// Check/uncheck all checkboxes in the table
-			var rows = dataTable.rows( {
-				'search': 'applied'
-			} ).nodes();
-			$( 'input[type="checkbox"]', rows ).prop( 'checked', this.checked );
-		} );
-		
+		// Handle click on checkbox to set state of "Select all" control
+	   $('#table1 tbody').on('change', 'input[type="checkbox"], #chkid', function(){
+		  // If checkbox is not checked
+		  if(!this.checked){
+			 var el = $('#select-all').get(0);
+			 // If "Select all" control is checked and has 'indeterminate' property
+			 if(el && el.checked && ('indeterminate' in el)){
+				// Set visual state of "Select all" control 
+				// as 'indeterminate'
+				el.indeterminate = true;
+			 }
+		  }
+	   });
 
 		 $( '#delete' ) . bootstrap_confirm_delete( {
 		 	debug: false,
@@ -97,12 +187,17 @@
 		$('#AddField').on('submit', function(e){
             e.preventDefault();
 			
+			var formData = new FormData($(this)[0]);
+			
             $.ajax({
                 url: "includes/<? echo $_GET['where']; ?>/new.php",
                 type: 'POST',
-                data: $('#AddField').serialize(),
+                data: formData,
+				async: false,
+				cache: false,
+				contentType: false,
+				processData: false,
                 success: function(data){
-					data = $.parseJSON(data);
 					if(data.results=="Duplicate"){ //Duplicate Account
 						var stack_modal = {"dir1": "down", "dir2": "right", "push": "top", "modal": false, "overlay_close": false};
 						var notice = new PNotify({
@@ -172,6 +267,21 @@
 					$("#lastname").val(data.results[0]['lastname']);
 					$("#email").val(data.results[0]['email']);
 					$("#mobile").val(data.results[0]['mobile']);
+					if(data.results[0]['picture']==''){
+						$('#imgstaff').attr('src','images/user.png') ;
+					}else{
+						$('#imgstaff').attr('src','images/staff/'+data.results[0]['picture']) ;
+					}
+					
+					
+					//load check
+					var check_menu = data.results[0]['menu'];
+					$('input#menu_edit').iCheck('uncheck');
+					for(var i=0; i< check_menu.length; i++) {
+						var menu_value = data.results[0]['menu'][i]['menu_id'];
+						$('input#menu_edit').filter('[value="'+menu_value+'"]').iCheck('check');
+					}
+					
 				}
             });
         });
@@ -225,7 +335,7 @@
 	<div class="modal fade add-modal" tabindex="-1" role="dialog" aria-hidden="true">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
-				<form class="form-horizontal form-label-left" id="AddField">
+				<form class="form-horizontal form-label-left" id="AddField" enctype="multipart/form-data">
 					<div class="modal-header">
 						<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
 							  </button>
@@ -328,7 +438,7 @@
 	<div class="modal fade edit-modal" tabindex="-1" role="dialog" aria-hidden="true">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
-				<form class="form-horizontal form-label-left" id="AddField">
+				<form class="form-horizontal form-label-left" id="EditField" enctype="multipart/form-data">
 					<div class="modal-header">
 						<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
 							  </button>
@@ -392,25 +502,27 @@
 									
 									<div class="col-md-4 col-sm-12 col-xs-12">
 										<div class="form-group">
-											<label class="col-md-6 col-sm-6 col-xs-12 control-label">Menu Access
-														</label>
+											<label class="col-md-6 col-sm-6 col-xs-12 control-label">Menu Access</label>
 											<div class="col-md-12 col-sm-12 col-xs-12">
-												<? 
-																$sql = "select * from menu_master";
-																$result = mysql_query($sql) or die(mysql_error());
-																while($rows = mysql_fetch_array($result))
-																{
-														  ?>
-												<div class="checkbox">
+												 <? 
+														$sql = "select * from menu_master";
+														$result = mysql_query($sql) or die(mysql_error());
+														while($rows = mysql_fetch_array($result))
+														{
+												  ?>
+												  <div class="checkbox">
 													<label>
-															  <input type="checkbox" class="flat" id="menu" name="menu[]" checked="checked" value="<? echo $rows['menu_id'];?>"> <? echo $rows['menu_name'];?>
-															</label>
-
-												</div>
-												<?
-													}
-												?>
+													  <input type="checkbox" id="menu_edit" class="flat" name="menu[]" value="<? echo $rows['menu_id'];?>"> <? echo $rows['menu_name'];?>
+													</label>
+												  </div>
+												  <?
+														}
+												  ?>
 											</div>
+										</div>
+										<div>
+											<label class="col-md-6 col-sm-6 col-xs-12 control-label">Picture</label>
+												<img class="img-responsive avatar-view" src="images/user.png" alt="Avatar" title="Avatar" id="imgstaff">
 										</div>
 									</div>
 								</row>
